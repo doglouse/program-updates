@@ -53,33 +53,41 @@
             align-items: center;
             flex-wrap: wrap;
             padding: 4px 0;
-            cursor: pointer;
+            cursor: text;
         }
 
         .field-box:focus-within { border-bottom: 2px solid var(--primary); }
 
-        .placeholder { color: #9e9e9e; font-size: 16px; margin-left: 4px; }
+        .main-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 50px;
+            height: 32px;
+            font-size: 16px;
+            font-family: inherit;
+            background: transparent;
+        }
 
-        /* Chips */
         .chip {
             background: #eeeeee;
             border-radius: 16px;
-            padding: 4px 10px;
+            padding: 2px 10px;
             font-size: 13px;
             margin: 3px;
             display: flex;
             align-items: center;
             color: var(--text);
+            white-space: nowrap;
         }
 
         .chip i { 
-            font-size: 18px; 
+            font-size: 16px; 
             margin-left: 6px; 
             cursor: pointer; 
             color: #757575; 
         }
 
-        /* Dropdown Menu */
         .dropdown-menu {
             position: absolute;
             top: 100%;
@@ -89,31 +97,12 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             z-index: 1000;
             display: none;
-            max-height: 350px;
+            max-height: 250px;
             overflow-y: auto;
             border-radius: 0 0 4px 4px;
         }
 
         .dropdown-menu.active { display: block; }
-
-        .search-container {
-            position: sticky;
-            top: 0;
-            background: white;
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            z-index: 10;
-        }
-
-        .search-container input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            outline: none;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
 
         .list-item {
             padding: 12px 16px;
@@ -121,6 +110,7 @@
             align-items: center;
             cursor: pointer;
             transition: background 0.2s;
+            font-size: 14px;
         }
 
         .list-item:hover { background: var(--bg-hover); }
@@ -129,10 +119,9 @@
             margin-right: 15px;
             width: 18px;
             height: 18px;
-            pointer-events: none; /* Let the div click handle it */
+            pointer-events: none;
         }
 
-        /* Date Section */
         .date-row { display: flex; gap: 30px; }
         .date-field { flex: 1; }
         input[type="date"] {
@@ -156,7 +145,6 @@
             float: right;
             margin-top: 20px;
             display: none;
-            letter-spacing: 0.5px;
         }
 
         .btn-download.visible { display: block; }
@@ -170,10 +158,10 @@
     <div class="input-group visible" id="group-report">
         <label>Report type</label>
         <div class="field-box" onclick="toggleMenu('menu-report', event)">
-            <div id="display-report" class="placeholder">Select a report type</div>
+            <input type="text" id="display-report" class="main-input" placeholder="Select a report type" readonly style="cursor: pointer;">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
-        <div class="dropdown-menu" id="menu-report" onclick="event.stopPropagation()">
+        <div class="dropdown-menu" id="menu-report">
             <div class="list-item" onclick="selectReport('ConnectED Event Summary Report')">ConnectED Event Summary Report</div>
             <div class="list-item" onclick="selectReport('Program Update Report')">Program Update Report</div>
         </div>
@@ -181,30 +169,28 @@
 
     <div class="input-group" id="group-topic">
         <label>Topic</label>
-        <div class="field-box" onclick="toggleMenu('menu-topic', event)">
+        <div class="field-box" onclick="handleFieldClick('input-topic', 'menu-topic', event)">
             <div id="chips-topic" style="display: flex; flex-wrap: wrap;"></div>
-            <div id="placeholder-topic" class="placeholder">Search topics</div>
+            <input type="text" id="input-topic" class="main-input" placeholder="Search topics..." 
+                   onkeyup="filterItems('menu-topic', this.value, event)"
+                   autocomplete="off">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
-        <div class="dropdown-menu" id="menu-topic" onclick="event.stopPropagation()">
-            <div class="search-container">
-                <input type="text" placeholder="Search topics..." onkeyup="filterItems('menu-topic', this.value)">
-            </div>
+        <div class="dropdown-menu" id="menu-topic">
             <div id="list-topic"></div>
         </div>
     </div>
 
     <div class="input-group" id="group-activity">
         <label>Activity type</label>
-        <div class="field-box" onclick="toggleMenu('menu-activity', event)">
+        <div class="field-box" onclick="handleFieldClick('input-activity', 'menu-activity', event)">
             <div id="chips-activity" style="display: flex; flex-wrap: wrap;"></div>
-            <div id="placeholder-activity" class="placeholder">Search activities</div>
+            <input type="text" id="input-activity" class="main-input" placeholder="Search activities..." 
+                   onkeyup="filterItems('menu-activity', this.value, event)"
+                   autocomplete="off">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
-        <div class="dropdown-menu" id="menu-activity" onclick="event.stopPropagation()">
-            <div class="search-container">
-                <input type="text" placeholder="Search activities..." onkeyup="filterItems('menu-activity', this.value)">
-            </div>
+        <div class="dropdown-menu" id="menu-activity">
             <div id="list-activity"></div>
         </div>
     </div>
@@ -226,20 +212,20 @@
 </div>
 
 <script>
-    // Full Data Arrays
     const topics = ["Allergy/Immunology", "Anesthesiology", "Cardiology", "COVID-19", "COVID-19 Co-Management", "Dermatology", "Endocrinology", "Federal", "Gastroenterology", "Hematology", "Infectious Disease", "Internal Medicine", "Managed Care & Specialty Pharmacy", "Mental Health", "MIPS", "MOC", "Nephrology", "Neurology", "OB/GYN & Women's Health", "Oncology", "Ophthalmology", "Otolaryngology", "Pain Management", "Pediatrics", "Public Health & Prevention", "Pulmonary Medicine", "Rheumatology", "State Required CME", "Urology"];
     const activities = ["AdaptiveMedEd", "Booster Quiz", "Clinical Case Study", "Data Review/Grant Rounds", "Escape Room", "Hybrid Meeting", "Livesteam", "Live Meeting", "Podcast", "Print Activity", "Patient Toolkit", "Simulation", "Video Library", "Virtual Meeting", "Virtual Symposium", "Web App", "Online Activity", "Live Webinar"];
 
     let selectedTopics = [];
     let selectedActivities = [];
 
-    // Initialize lists
     function init() {
-        const tList = document.getElementById('list-topic');
-        tList.innerHTML = topics.map(t => createItemHTML(t, 'topic')).join('');
+        document.getElementById('list-topic').innerHTML = topics.map(t => createItemHTML(t, 'topic')).join('');
+        document.getElementById('list-activity').innerHTML = activities.map(a => createItemHTML(a, 'activity')).join('');
         
-        const aList = document.getElementById('list-activity');
-        aList.innerHTML = activities.map(a => createItemHTML(a, 'activity')).join('');
+        // Prevent clicks inside the menus from reaching the window-level "close" logic
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.addEventListener('click', (e) => e.stopPropagation());
+        });
     }
 
     function createItemHTML(item, type) {
@@ -249,30 +235,36 @@
                 </div>`;
     }
 
-    // Toggle menu visibility
+    // New unified handler for the field box
+    function handleFieldClick(inputId, menuId, e) {
+        e.stopPropagation();
+        closeAllMenus(menuId); // Close others
+        document.getElementById(menuId).classList.add('active');
+        document.getElementById(inputId).focus();
+    }
+
     function toggleMenu(id, e) {
         e.stopPropagation();
         const menu = document.getElementById(id);
-        const isOpen = menu.classList.contains('active');
+        const isActive = menu.classList.contains('active');
         closeAllMenus();
-        if (!isOpen) menu.classList.add('active');
+        if (!isActive) menu.classList.add('active');
     }
 
-    function closeAllMenus() {
-        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+    function closeAllMenus(exceptId) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => {
+            if (m.id !== exceptId) m.classList.remove('active');
+        });
     }
 
-    // Handle Report Selection (Single)
     function selectReport(val) {
-        document.getElementById('display-report').innerText = val;
-        document.getElementById('display-report').classList.remove('placeholder');
+        document.getElementById('display-report').value = val;
         document.getElementById('group-topic').classList.add('visible');
         closeAllMenus();
     }
 
-    // Handle Multi-selection
     function toggleSelection(e, val, type) {
-        // e.stopPropagation() is already on the menu container to keep it open
+        e.stopPropagation();
         const list = type === 'topic' ? selectedTopics : selectedActivities;
         const index = list.indexOf(val);
         const checkbox = document.getElementById(`chk-${type}-${val}`);
@@ -287,14 +279,15 @@
 
         renderChips(type);
         checkProgressiveFlow();
+        document.getElementById(`input-${type}`).focus();
     }
 
     function renderChips(type) {
         const list = type === 'topic' ? selectedTopics : selectedActivities;
         const container = document.getElementById(`chips-${type}`);
-        const placeholder = document.getElementById(`placeholder-${type}`);
+        const input = document.getElementById(`input-${type}`);
 
-        placeholder.style.display = list.length > 0 ? 'none' : 'block';
+        input.placeholder = list.length > 0 ? "" : (type === 'topic' ? "Search topics..." : "Search activities...");
         
         container.innerHTML = list.map(item => `
             <div class="chip">
@@ -305,16 +298,18 @@
     }
 
     function removeChip(e, val, type) {
-        e.stopPropagation(); // Keep menu closed if user clicks x on a chip
-        const list = type === 'topic' ? selectedTopics : selectedActivities;
-        const index = list.indexOf(val);
-        if (index > -1) {
-            list.splice(index, 1);
-            const checkbox = document.getElementById(`chk-${type}-${val}`);
-            if(checkbox) checkbox.checked = false;
-            renderChips(type);
-            checkProgressiveFlow();
-        }
+        e.stopPropagation();
+        toggleSelection(e, val, type);
+    }
+
+    function filterItems(menuId, query, e) {
+        e.stopPropagation();
+        document.getElementById(menuId).classList.add('active'); // Ensure menu stays open while typing
+        const listItems = document.getElementById(menuId).querySelectorAll('.list-item');
+        listItems.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            item.style.display = text.includes(query.toLowerCase()) ? 'flex' : 'none';
+        });
     }
 
     function checkProgressiveFlow() {
@@ -328,16 +323,6 @@
         if (start && end) document.getElementById('btn-download').classList.add('visible');
     }
 
-    // Search Logic
-    function filterItems(menuId, query) {
-        const listItems = document.getElementById(menuId).querySelectorAll('.list-item');
-        listItems.forEach(item => {
-            const text = item.innerText.toLowerCase();
-            item.style.display = text.includes(query.toLowerCase()) ? 'flex' : 'none';
-        });
-    }
-
-    // Close if user clicks outside the card or on the page background
     window.onclick = () => closeAllMenus();
 
     init();

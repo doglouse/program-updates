@@ -161,7 +161,7 @@
             <input type="text" id="display-report" class="main-input" placeholder="Select a report type" readonly style="cursor: pointer;">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
-        <div class="dropdown-menu" id="menu-report">
+        <div class="dropdown-menu" id="menu-report" onclick="event.stopPropagation()">
             <div class="list-item" onclick="selectReport('ConnectED Event Summary Report')">ConnectED Event Summary Report</div>
             <div class="list-item" onclick="selectReport('Program Update Report')">Program Update Report</div>
         </div>
@@ -172,7 +172,7 @@
         <div class="field-box" onclick="handleFieldClick('input-topic', 'menu-topic', event)">
             <div id="chips-topic" style="display: flex; flex-wrap: wrap;"></div>
             <input type="text" id="input-topic" class="main-input" placeholder="Search topics..." 
-                   onkeyup="filterItems('menu-topic', this.value, event)"
+                   onkeyup="handleKeyUp('menu-topic', this.value, event)"
                    autocomplete="off">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
@@ -186,7 +186,7 @@
         <div class="field-box" onclick="handleFieldClick('input-activity', 'menu-activity', event)">
             <div id="chips-activity" style="display: flex; flex-wrap: wrap;"></div>
             <input type="text" id="input-activity" class="main-input" placeholder="Search activities..." 
-                   onkeyup="filterItems('menu-activity', this.value, event)"
+                   onkeyup="handleKeyUp('menu-activity', this.value, event)"
                    autocomplete="off">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
@@ -222,7 +222,6 @@
         document.getElementById('list-topic').innerHTML = topics.map(t => createItemHTML(t, 'topic')).join('');
         document.getElementById('list-activity').innerHTML = activities.map(a => createItemHTML(a, 'activity')).join('');
         
-        // Prevent clicks inside the menus from reaching the window-level "close" logic
         document.querySelectorAll('.dropdown-menu').forEach(menu => {
             menu.addEventListener('click', (e) => e.stopPropagation());
         });
@@ -235,11 +234,16 @@
                 </div>`;
     }
 
-    // New unified handler for the field box
     function handleFieldClick(inputId, menuId, e) {
         e.stopPropagation();
-        closeAllMenus(menuId); // Close others
-        document.getElementById(menuId).classList.add('active');
+        const menu = document.getElementById(menuId);
+        const alreadyOpen = menu.classList.contains('active');
+        
+        closeAllMenus();
+        
+        if (!alreadyOpen) {
+            menu.classList.add('active');
+        }
         document.getElementById(inputId).focus();
     }
 
@@ -251,9 +255,20 @@
         if (!isActive) menu.classList.add('active');
     }
 
-    function closeAllMenus(exceptId) {
+    // FIXED: This now closes everything correctly and wipes text without re-opening
+    function closeAllMenus() {
         document.querySelectorAll('.dropdown-menu').forEach(m => {
-            if (m.id !== exceptId) m.classList.remove('active');
+            if (m.classList.contains('active')) {
+                m.classList.remove('active');
+                
+                const type = m.id.split('-')[1]; 
+                const input = document.getElementById(`input-${type}`);
+                if (input) {
+                    input.value = "";
+                    applyFilter(m.id, ""); // Reset the list items silently
+                    renderChips(type); 
+                }
+            }
         });
     }
 
@@ -287,7 +302,11 @@
         const container = document.getElementById(`chips-${type}`);
         const input = document.getElementById(`input-${type}`);
 
-        input.placeholder = list.length > 0 ? "" : (type === 'topic' ? "Search topics..." : "Search activities...");
+        if (list.length > 0 || (input && input.value !== "")) {
+            input.placeholder = "";
+        } else if (input) {
+            input.placeholder = type === 'topic' ? "Search topics..." : "Search activities...";
+        }
         
         container.innerHTML = list.map(item => `
             <div class="chip">
@@ -302,9 +321,17 @@
         toggleSelection(e, val, type);
     }
 
-    function filterItems(menuId, query, e) {
+    // Handles the keyboard event specifically
+    function handleKeyUp(menuId, query, e) {
         e.stopPropagation();
-        document.getElementById(menuId).classList.add('active'); // Ensure menu stays open while typing
+        document.getElementById(menuId).classList.add('active');
+        applyFilter(menuId, query);
+        const type = menuId.split('-')[1];
+        renderChips(type);
+    }
+
+    // Logic only for filtering (no visibility changes)
+    function applyFilter(menuId, query) {
         const listItems = document.getElementById(menuId).querySelectorAll('.list-item');
         listItems.forEach(item => {
             const text = item.innerText.toLowerCase();

@@ -97,12 +97,33 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             z-index: 1000;
             display: none;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
             border-radius: 0 0 4px 4px;
         }
 
         .dropdown-menu.active { display: block; }
+
+        /* Bulk Action Styling */
+        .menu-actions {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 8px 16px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .action-link {
+            font-size: 12px;
+            color: var(--primary);
+            text-transform: uppercase;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
 
         .list-item {
             padding: 12px 16px;
@@ -171,12 +192,14 @@
         <label>Topic</label>
         <div class="field-box" onclick="handleFieldClick('input-topic', 'menu-topic', event)">
             <div id="chips-topic" style="display: flex; flex-wrap: wrap;"></div>
-            <input type="text" id="input-topic" class="main-input" placeholder="Search topics..." 
-                   onkeyup="handleKeyUp('menu-topic', this.value, event)"
-                   autocomplete="off">
+            <input type="text" id="input-topic" class="main-input" placeholder="Search topics..." onkeyup="handleKeyUp('menu-topic', this.value, event)" autocomplete="off">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
         <div class="dropdown-menu" id="menu-topic">
+            <div class="menu-actions">
+                <span class="action-link" onclick="bulkSelect('topic', true)">Select All</span>
+                <span class="action-link" onclick="bulkSelect('topic', false)">Deselect All</span>
+            </div>
             <div id="list-topic"></div>
         </div>
     </div>
@@ -185,12 +208,14 @@
         <label>Activity type</label>
         <div class="field-box" onclick="handleFieldClick('input-activity', 'menu-activity', event)">
             <div id="chips-activity" style="display: flex; flex-wrap: wrap;"></div>
-            <input type="text" id="input-activity" class="main-input" placeholder="Search activities..." 
-                   onkeyup="handleKeyUp('menu-activity', this.value, event)"
-                   autocomplete="off">
+            <input type="text" id="input-activity" class="main-input" placeholder="Search activities..." onkeyup="handleKeyUp('menu-activity', this.value, event)" autocomplete="off">
             <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
         </div>
         <div class="dropdown-menu" id="menu-activity">
+            <div class="menu-actions">
+                <span class="action-link" onclick="bulkSelect('activity', true)">Select All</span>
+                <span class="action-link" onclick="bulkSelect('activity', false)">Deselect All</span>
+            </div>
             <div id="list-activity"></div>
         </div>
     </div>
@@ -199,12 +224,28 @@
         <div class="date-row">
             <div class="date-field">
                 <label>Start Date</label>
-                <input type="date" id="start-date" onchange="checkCompletion()">
+                <input type="date" id="start-date" onchange="checkProgressiveFlow()">
             </div>
             <div class="date-field">
                 <label>End Date</label>
-                <input type="date" id="end-date" onchange="checkCompletion()">
+                <input type="date" id="end-date" onchange="checkProgressiveFlow()">
             </div>
+        </div>
+    </div>
+
+    <div class="input-group" id="group-fields">
+        <label>Select included fields</label>
+        <div class="field-box" onclick="handleFieldClick('input-fields', 'menu-fields', event)">
+            <div id="chips-fields" style="display: flex; flex-wrap: wrap;"></div>
+            <input type="text" id="input-fields" class="main-input" placeholder="Search fields..." onkeyup="handleKeyUp('menu-fields', this.value, event)" autocomplete="off">
+            <i class="material-icons" style="margin-left: auto; color: #757575;">arrow_drop_down</i>
+        </div>
+        <div class="dropdown-menu" id="menu-fields">
+            <div class="menu-actions">
+                <span class="action-link" onclick="bulkSelect('fields', true)">Select All</span>
+                <span class="action-link" onclick="bulkSelect('fields', false)">Deselect All</span>
+            </div>
+            <div id="list-fields"></div>
         </div>
     </div>
 
@@ -213,14 +254,17 @@
 
 <script>
     const topics = ["Allergy/Immunology", "Anesthesiology", "Cardiology", "COVID-19", "COVID-19 Co-Management", "Dermatology", "Endocrinology", "Federal", "Gastroenterology", "Hematology", "Infectious Disease", "Internal Medicine", "Managed Care & Specialty Pharmacy", "Mental Health", "MIPS", "MOC", "Nephrology", "Neurology", "OB/GYN & Women's Health", "Oncology", "Ophthalmology", "Otolaryngology", "Pain Management", "Pediatrics", "Public Health & Prevention", "Pulmonary Medicine", "Rheumatology", "State Required CME", "Urology"];
-    const activities = ["AdaptiveMedEd", "Booster Quiz", "Clinical Case Study", "Data Review/Grant Rounds", "Escape Room", "Hybrid Meeting", "Livesteam", "Live Meeting", "Podcast", "Print Activity", "Patient Toolkit", "Simulation", "Video Library", "Virtual Meeting", "Virtual Symposium", "Web App", "Online Activity", "Live Webinar"];
+    const activities = ["AdaptiveMedEd", "Booster Quiz", "Clinical Case Study", "Data Review/Grant Rounds", "Escape Room", "Hybrid Meeting", "Livestream", "Live Meeting", "Podcast", "Print Activity", "Patient Toolkit", "Simulation", "Video Library", "Virtual Meeting", "Virtual Symposium", "Web App", "Online Activity", "Live Webinar"];
+    const fields = ["Activity title", "Activity summary", "Short title", "Supporters", "Clinical lead", "Research lead", "Operations lead", "Strategy lead", "Creative lead", "Clinical Supervisor", "Project code", "Activity code", "Release date", "Expiration date", "Admin URL"];
 
     let selectedTopics = [];
     let selectedActivities = [];
+    let selectedFields = [];
 
     function init() {
         document.getElementById('list-topic').innerHTML = topics.map(t => createItemHTML(t, 'topic')).join('');
         document.getElementById('list-activity').innerHTML = activities.map(a => createItemHTML(a, 'activity')).join('');
+        document.getElementById('list-fields').innerHTML = fields.map(f => createItemHTML(f, 'fields')).join('');
         
         document.querySelectorAll('.dropdown-menu').forEach(menu => {
             menu.addEventListener('click', (e) => e.stopPropagation());
@@ -229,7 +273,7 @@
 
     function createItemHTML(item, type) {
         return `<div class="list-item" onclick="toggleSelection(event, '${item}', '${type}')">
-                    <input type="checkbox" id="chk-${type}-${item}">
+                    <input type="checkbox" id="chk-${type}-${item.replace(/\s+/g, '-')}">
                     <span>${item}</span>
                 </div>`;
     }
@@ -238,12 +282,8 @@
         e.stopPropagation();
         const menu = document.getElementById(menuId);
         const alreadyOpen = menu.classList.contains('active');
-        
         closeAllMenus();
-        
-        if (!alreadyOpen) {
-            menu.classList.add('active');
-        }
+        if (!alreadyOpen) menu.classList.add('active');
         document.getElementById(inputId).focus();
     }
 
@@ -255,21 +295,40 @@
         if (!isActive) menu.classList.add('active');
     }
 
-    // FIXED: This now closes everything correctly and wipes text without re-opening
     function closeAllMenus() {
         document.querySelectorAll('.dropdown-menu').forEach(m => {
             if (m.classList.contains('active')) {
                 m.classList.remove('active');
-                
                 const type = m.id.split('-')[1]; 
                 const input = document.getElementById(`input-${type}`);
                 if (input) {
                     input.value = "";
-                    applyFilter(m.id, ""); // Reset the list items silently
+                    applyFilter(m.id, ""); 
                     renderChips(type); 
                 }
             }
         });
+    }
+
+    function bulkSelect(type, selectAll) {
+        const fullList = type === 'topic' ? topics : (type === 'activity' ? activities : fields);
+        const selectedList = type === 'topic' ? selectedTopics : (type === 'activity' ? selectedActivities : selectedFields);
+        
+        // Clear current array
+        selectedList.length = 0;
+        
+        if (selectAll) {
+            fullList.forEach(item => selectedList.push(item));
+        }
+
+        // Update all checkboxes
+        fullList.forEach(item => {
+            const chk = document.getElementById(`chk-${type}-${item.replace(/\s+/g, '-')}`);
+            if (chk) chk.checked = selectAll;
+        });
+
+        renderChips(type);
+        checkProgressiveFlow();
     }
 
     function selectReport(val) {
@@ -280,32 +339,29 @@
 
     function toggleSelection(e, val, type) {
         e.stopPropagation();
-        const list = type === 'topic' ? selectedTopics : selectedActivities;
+        const list = type === 'topic' ? selectedTopics : (type === 'activity' ? selectedActivities : selectedFields);
         const index = list.indexOf(val);
-        const checkbox = document.getElementById(`chk-${type}-${val}`);
+        const checkbox = document.getElementById(`chk-${type}-${val.replace(/\s+/g, '-')}`);
 
         if (index > -1) {
             list.splice(index, 1);
-            checkbox.checked = false;
+            if(checkbox) checkbox.checked = false;
         } else {
             list.push(val);
-            checkbox.checked = true;
+            if(checkbox) checkbox.checked = true;
         }
 
         renderChips(type);
         checkProgressiveFlow();
-        document.getElementById(`input-${type}`).focus();
     }
 
     function renderChips(type) {
-        const list = type === 'topic' ? selectedTopics : selectedActivities;
+        const list = type === 'topic' ? selectedTopics : (type === 'activity' ? selectedActivities : selectedFields);
         const container = document.getElementById(`chips-${type}`);
         const input = document.getElementById(`input-${type}`);
 
-        if (list.length > 0 || (input && input.value !== "")) {
-            input.placeholder = "";
-        } else if (input) {
-            input.placeholder = type === 'topic' ? "Search topics..." : "Search activities...";
+        if (input) {
+            input.placeholder = (list.length > 0 || input.value !== "") ? "" : `Search ${type}...`;
         }
         
         container.innerHTML = list.map(item => `
@@ -321,16 +377,13 @@
         toggleSelection(e, val, type);
     }
 
-    // Handles the keyboard event specifically
     function handleKeyUp(menuId, query, e) {
         e.stopPropagation();
         document.getElementById(menuId).classList.add('active');
         applyFilter(menuId, query);
-        const type = menuId.split('-')[1];
-        renderChips(type);
+        renderChips(menuId.split('-')[1]);
     }
 
-    // Logic only for filtering (no visibility changes)
     function applyFilter(menuId, query) {
         const listItems = document.getElementById(menuId).querySelectorAll('.list-item');
         listItems.forEach(item => {
@@ -342,16 +395,16 @@
     function checkProgressiveFlow() {
         if (selectedTopics.length > 0) document.getElementById('group-activity').classList.add('visible');
         if (selectedActivities.length > 0) document.getElementById('group-date').classList.add('visible');
-    }
-
-    function checkCompletion() {
+        
         const start = document.getElementById('start-date').value;
         const end = document.getElementById('end-date').value;
-        if (start && end) document.getElementById('btn-download').classList.add('visible');
+        if (start && end) document.getElementById('group-fields').classList.add('visible');
+
+        if (selectedFields.length > 0) document.getElementById('btn-download').classList.add('visible');
+        else document.getElementById('btn-download').classList.remove('visible');
     }
 
     window.onclick = () => closeAllMenus();
-
     init();
 </script>
 
